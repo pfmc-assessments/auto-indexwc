@@ -20,7 +20,7 @@ temp_file <- tempfile(fileext = ".rda")
 download.file(raw_url, temp_file, mode = "wb")
 load(temp_file, envir = .GlobalEnv)
 config_data <- dplyr::filter(configuration, source == "NWFSC.Combo")
-config_data <- dplyr::filter(config_data, used == "TRUE")
+config_data <- dplyr::filter(config_data, used == "TRUE") #need to update this in indexwc
 unlink(temp_file)
 
 # add model index
@@ -206,8 +206,8 @@ process_species <- function(i) {
 
       indices <- rbind(index_all, index_CA, index_OR, index_WA)
       indices$index_id <- config_data$index[i]
-      #indices$common_name <- sub$common_name[1]
-      indices$species <- config_data$species[i]
+      indices$common_name <- sub$common_name[1]
+      #indices$species <- config_data$species[i]
       indices$family <- config_data$family[i]
       indices$formula <- config_data$formula[i]
       indices$min_depth <- config_data$min_depth[i]
@@ -233,9 +233,10 @@ process_species <- function(i) {
       write.csv(indices,
               paste0("output/",
                      sub$common_name[1],"_",
-                     config_data$index_id[i],".csv"), row.names=FALSE)
+                     #config_data$index_id[i],
+                     ".csv"), row.names=FALSE)
       write.csv(mean_depth,
-              paste0("output/biomass_weighted_depth_",
+              paste0("output/biomass_weighted_depth/biomass_weighted_depth_",
                      sub$common_name[1],"_",
                      config_data$index_id[i],".csv"), row.names=FALSE)
   }
