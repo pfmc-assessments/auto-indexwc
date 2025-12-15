@@ -114,7 +114,7 @@ process_species <- function(i) {
   write.csv(san, file=paste0("diagnostics/sanity_",
                              config_data$index[i], ".csv"), row.names=FALSE)
 
-  if(class(fit) == "sdmTMB" & sum(unlist(san[1:7])) == 7) {
+  if(class(fit) == "sdmTMB" & san$all_ok == TRUE) {
       # make predictions
       wcgbts_grid <- indexwc::california_current_grid
 
