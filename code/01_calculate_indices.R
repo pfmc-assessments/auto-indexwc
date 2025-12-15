@@ -20,6 +20,7 @@ temp_file <- tempfile(fileext = ".rda")
 download.file(raw_url, temp_file, mode = "wb")
 load(temp_file, envir = .GlobalEnv)
 config_data <- dplyr::filter(configuration, source == "NWFSC.Combo")
+config_data <- dplyr::filter(config_data, used == "TRUE")
 unlink(temp_file)
 
 # add model index
@@ -205,7 +206,19 @@ process_species <- function(i) {
 
       indices <- rbind(index_all, index_CA, index_OR, index_WA)
       indices$index_id <- config_data$index[i]
-      indices$common_name <- sub$common_name[1]
+      #indices$common_name <- sub$common_name[1]
+      indices$species <- config_data$species[i]
+      indices$family <- config_data$family[i]
+      indices$formula <- config_data$formula[i]
+      indices$min_depth <- config_data$min_depth[i]
+      indices$max_depth <- config_data$max_depth[i]
+      indices$min_latitude <- config_data$min_latitude[i]
+      indices$max_latitude <- config_data$max_latitude[i]
+      indices$anisotropy <- config_data$anisotropy[i]
+      indices$knots <- config_data$knots[i]
+      indices$spatiotemporal1 <- config_data$spatiotemporal1[i]
+      indices$spatiotemporal2 <- config_data$spatiotemporal2[i]
+      indices$share_range <- config_data$share_range[i]
 
       # append date as attribute
       attr(indices, "date") <- Sys.Date()
