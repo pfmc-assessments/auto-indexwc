@@ -11,7 +11,7 @@ jobs:
   run-models:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false  # This prevents one failure from stopping all jobs
+      fail-fast: false
       matrix:
         batch: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
     env:
@@ -19,21 +19,37 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
     steps:
       - uses: actions/checkout@v4
+      
       - uses: r-lib/actions/setup-r@v2
-
-      - name: Install packages
-        run: Rscript -e "install.packages(c('remotes', 'dplyr', 'future', 'future.apply', 'sdmTMB', 'stringr', 'lubridate', 'tibble'))"
-
-      - name: Install indexwc
-        run: Rscript -e "remotes::install_github('pfmc-assessments/indexwc')"
-
-      - name: Install nwfscSurvey
-        run: Rscript -e "remotes::install_github('pfmc-assessments/nwfscSurvey')"
-
-      - name: Run SDMs with sdmTMB for Batch ${{ matrix.batch }}
+        with:
+          use-public-rspm: true
+      
+      # System dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libgdal-dev \
+            libgeos-dev \
+            libproj-dev \
+            libudunits2-dev
+      
+      - name: R packages
+        run: |
+          install.packages('remotes')
+          install.packages(c('dplyr', 'stringr', 'lubridate', 'tibble', 'future', 'future.apply'))
+          install.packages(c('sf', 'terra', 'sdmTMB'), dependencies = TRUE)
+          remotes::install_github('pfmc-assessments/nwfscSurvey', dependencies = TRUE)
+          remotes::install_github('pfmc-assessments/indexwc', dependencies = TRUE)
+        shell: Rscript {0}
+      
+      - name: run R script in batch mode ${{ matrix.batch }}
         run: Rscript code/01_calculate_indices.R ${{ matrix.batch }}
-
-      - name: Upload results for Batch ${{ matrix.batch }}
+      
+      - name: upload results ${{ matrix.batch }}
         uses: actions/upload-artifact@v4
         with:
           name: batch-${{ matrix.batch }}
