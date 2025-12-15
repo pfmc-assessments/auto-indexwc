@@ -9,7 +9,7 @@ on:
 
 jobs:
   run-models:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false  # This prevents one failure from stopping all jobs
       matrix:
