@@ -232,7 +232,8 @@ process_species <- function(i) {
 
       write.csv(indices,
               paste0("output/",
-                     sub$common_name[1],"_",
+                     sub$common_name[1],
+                     #"_",
                      #config_data$index_id[i],
                      ".csv"), row.names=FALSE)
       write.csv(mean_depth,
