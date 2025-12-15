@@ -78,7 +78,7 @@ process_species <- function(i) {
   mesh <- sdmTMB::make_mesh(sub, xy_cols = c("X","Y"),
                             n_knots = config_data$knots[i])
   sub$fyear <- as.factor(sub$year) # year as factor
-
+  sub$catch_weight = sub$catch_weight * 0.001 # convert to mt, matching indexwc & SS
   sub$area_km2 <- sub$area_swept_ha_der * 0.01 # convert to km2
 
   # this is to help with printing, if done below
