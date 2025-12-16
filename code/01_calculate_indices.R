@@ -14,7 +14,7 @@ num_batches <- 24
 args <- commandArgs(trailingOnly = TRUE)
 current_batch <- as.numeric(args[1]) # This gets the batch number
 
-# This replaces the csv code 
+# This replaces the csv code
 raw_url <- "https://raw.githubusercontent.com/pfmc-assessments/indexwc/main/data/configuration.rda"
 temp_file <- tempfile(fileext = ".rda")
 download.file(raw_url, temp_file, mode = "wb")
@@ -102,7 +102,7 @@ process_species <- function(i) {
                 spatiotemporal=st,
                 anisotropy = config_data$anisotropy[i],
                 family = get(config_data$family[i])(),
-                share_range = config_data$share_range[i]), 
+                share_range = config_data$share_range[i]),
              silent = TRUE)
 
   # create output directory if it doesn't exist
@@ -193,6 +193,7 @@ process_species <- function(i) {
             upr = NA,
             log_est = NA,
             se = NA,
+            se_natural = NA,
             type = "index",
             index = region_name
           )
