@@ -110,7 +110,11 @@ process_species <- function(i) {
   }
   # Check write access
   file.access("diagnostics", mode = 2)
-  san <- sanity(fit, silent=TRUE)
+  if(inherits(fit, "try-error")) {
+    san <- list(all_ok = FALSE)
+  } else {
+    san <- sanity(fit, silent = TRUE)
+  }
   write.csv(san, file=paste0("diagnostics/sanity_",
                              config_data$index[i], ".csv"), row.names=FALSE)
 
