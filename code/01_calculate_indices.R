@@ -93,7 +93,7 @@ process_species <- function(i) {
   # initialize to NULL and wrap in try() to avoid
   # 'system is computationally singular' error
   fit <- NULL
-  fit <- try(sdmTMB(formula = as.formula(config_data$formula[i]),
+  fit <- suppressWarnings(try(sdmTMB(formula = as.formula(config_data$formula[i]),
                 time = "year",
                 offset = log(sub$area_km2),
                 mesh = mesh,
@@ -103,7 +103,7 @@ process_species <- function(i) {
                 anisotropy = config_data$anisotropy[i],
                 family = get(config_data$family[i])(),
                 share_range = config_data$share_range[i]),
-             silent = TRUE)
+             silent = TRUE))
 
   # create output directory if it doesn't exist
   if (!dir.exists("diagnostics")) {
