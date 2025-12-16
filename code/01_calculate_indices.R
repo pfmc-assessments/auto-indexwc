@@ -36,7 +36,7 @@ dat <- nwfscSurvey::pull_catch(survey = "NWFSC.Combo",
 names(dat) <- tolower(names(dat))
 dat <- dplyr::left_join(dat, haul[,c("trawl_id","area_swept_ha_der")])
 # convert date string to doy
-dat$yday <- lubridate::yday(dat$date)
+dat$yday <- lubridate::yday(as.Date(dat$date))
 # filter out a few bad locations
 dat <- dplyr::filter(dat, !is.na(longitude_dd),
                 !is.na(latitude_dd))
@@ -102,7 +102,8 @@ process_species <- function(i) {
                 spatiotemporal=st,
                 anisotropy = config_data$anisotropy[i],
                 family = get(config_data$family[i])(),
-                share_range = config_data$share_range[i]), silent = TRUE)
+                share_range = config_data$share_range[i]), 
+             silent = TRUE)
 
   # create output directory if it doesn't exist
   if (!dir.exists("diagnostics")) {
@@ -129,7 +130,7 @@ process_species <- function(i) {
                                    depth <= config_data$min_depth[i],
                                    depth > config_data$max_depth[i],
                                    area_km2_WCGBTS > 0)
-      print(nrow(wcgbts_grid))
+      #print(nrow(wcgbts_grid))
       # Add calendar date -- predicting to jul 1
       wcgbts_grid$zday <- (182 - mean(sub$yday)) / sd(sub$yday)
       wcgbts_grid$pass_scaled <- 0
