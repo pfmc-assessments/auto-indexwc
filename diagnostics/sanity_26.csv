@@ -1,0 +1,2 @@
+"hessian_ok","eigen_values_ok","nlminb_ok","range_ok","gradients_ok","se_magnitude_ok","se_na_ok","sigmas_ok","all_ok"
+FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE
