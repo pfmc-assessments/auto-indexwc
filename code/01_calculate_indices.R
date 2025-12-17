@@ -1,6 +1,6 @@
 library(nwfscSurvey)
 library(indexwc)
-library(lubridate)
+#library(lubridate)
 library(dplyr)
 library(sdmTMB)
 library(stringr)
@@ -36,7 +36,7 @@ dat <- nwfscSurvey::pull_catch(survey = "NWFSC.Combo",
 names(dat) <- tolower(names(dat))
 dat <- dplyr::left_join(dat, haul[,c("trawl_id","area_swept_ha_der")])
 # convert date string to doy
-dat$yday <- lubridate::yday(as.Date(dat$date))
+#dat$yday <- lubridate::yday(as.Date(dat$date))
 # filter out a few bad locations
 dat <- dplyr::filter(dat, !is.na(longitude_dd),
                 !is.na(latitude_dd))
@@ -60,7 +60,7 @@ config_data <- dplyr::filter(config_data, batch == current_batch)
 
 process_species <- function(i) {
   sub <- dplyr::filter(dat, common_name == config_data$species[i])
-  sub <- dplyr::mutate(sub, zday = (yday - mean(sub$yday)) / sd(sub$yday))
+  #sub <- dplyr::mutate(sub, zday = (yday - mean(sub$yday)) / sd(sub$yday))
   sub$pass_scaled <- sub$pass - mean(range(sub$pass)) # -0.5, 0.5
   # make sure depth is negative, like config file
   sub$depth_m <- -sub$depth_m
@@ -132,7 +132,7 @@ process_species <- function(i) {
                                    area_km2_WCGBTS > 0)
       #print(nrow(wcgbts_grid))
       # Add calendar date -- predicting to jul 1
-      wcgbts_grid$zday <- (182 - mean(sub$yday)) / sd(sub$yday)
+      #wcgbts_grid$zday <- (182 - mean(sub$yday)) / sd(sub$yday)
       wcgbts_grid$pass_scaled <- 0
       # add X-Y
       wcgbts_grid <- sdmTMB::add_utm_columns(wcgbts_grid,
