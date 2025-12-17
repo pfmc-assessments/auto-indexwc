@@ -113,6 +113,7 @@ process_species <- function(i) {
   file.access("diagnostics", mode = 2)
   if(inherits(fit, "try-error")) {
     san <- list(all_ok = FALSE)
+    cat("Fitting failed for ", config_data$species[i], "\n")
   } else {
     san <- sanity(fit, silent = TRUE)
   }
@@ -145,7 +146,9 @@ process_species <- function(i) {
       wcgbts_grid$fyear <- as.factor(wcgbts_grid$year)
 
       # Make coastwide index
+      cat("Making predictions for ", config_data$species[i], "\n")
       pred_all <- predict(fit, wcgbts_grid, return_tmb_object = TRUE)
+      cat("Generating coastwide index for ", config_data$species[i], "\n")
       index_all <- get_index(pred_all,
                              area = wcgbts_grid$area_km2_WCGBTS,
                              bias_correct = TRUE)
@@ -172,6 +175,7 @@ process_species <- function(i) {
         )
       }
       # calculate biomass weighted depth
+      cat("Bootstrapping depth for ", config_data$species[i], "\n")
       mean_depth <- pred_all$data |>
         group_by(year) |>
         group_split() |>
@@ -202,10 +206,13 @@ process_species <- function(i) {
         return(index)
       }
 
+      cat("Generating California index for ", config_data$species[i], "\n")
       index_CA <- process_region(region_code = "C",
                                  region_name = "California")
+      cat("Generating Oregon index for ", config_data$species[i], "\n")
       index_OR <- process_region(region_code = "O",
                                  region_name = "Oregon")
+      cat("Generating Washington index for ", config_data$species[i], "\n")
       index_WA <- process_region(region_code = "W",
                                  region_name = "Washington")
 
