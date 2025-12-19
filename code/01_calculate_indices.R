@@ -20,7 +20,11 @@ temp_file <- tempfile(fileext = ".rda")
 download.file(raw_url, temp_file, mode = "wb")
 load(temp_file, envir = .GlobalEnv)
 config_data <- dplyr::filter(configuration, source == "NWFSC.Combo")
-config_data <- dplyr::filter(config_data, used == "TRUE") #need to update this in indexwc
+sp_2025 <- c("canary rockfish", "chilipepper", "rougheye rockfish", "sablefish", "widow rockfish", "yelloweye rockfish", "yellowtail rockfish")
+config_data_2025 <- dplyr::filter(config_data, species %in% sp_2025 & used == "TRUE")
+config_data_other <- dplyr::filter(config_data, !species %in% sp_2025)
+config_data <- rbind(config_data_2025, config_data_other) |>
+  dplyr::arrange(tolower(species))
 unlink(temp_file)
 
 # add model index
@@ -232,14 +236,19 @@ process_species <- function(i) {
 
       write.csv(indices,
               paste0("output/",
-                     sub$common_name[1],
+                     stringr::str_replace_all(tolower(sub$common_name[1]),
+                        "^a-z0-9]+", "_"),
+                     #"_",
+                     #config_data$index_id[i],
+                     "_index.csv"), row.names=FALSE)
+      write.csv(mean_depth,
+              paste0("output/biomass_weighted_depth/",
+                    "biomass_weighted_depth_",
+                    stringr::str_replace_all(tolower(sub$common_name[1]),
+                        "^a-z0-9]+", "_"),
                      #"_",
                      #config_data$index_id[i],
                      ".csv"), row.names=FALSE)
-      write.csv(mean_depth,
-              paste0("output/biomass_weighted_depth/biomass_weighted_depth_",
-                     sub$common_name[1],"_",
-                     config_data$index_id[i],".csv"), row.names=FALSE)
   }
 }
 
