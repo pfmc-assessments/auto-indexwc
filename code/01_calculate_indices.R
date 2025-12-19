@@ -5,7 +5,6 @@ library(dplyr)
 library(sdmTMB)
 library(stringr)
 library(tibble)
-library(stringr)
 # library(future)
 # library(future.apply)
 
@@ -211,7 +210,6 @@ process_species <- function(i) {
       indices <- rbind(index_all, index_CA, index_OR, index_WA)
       indices$index_id <- config_data$index[i]
       indices$common_name <- sub$common_name[1]
-      #indices$species <- config_data$species[i]
       indices$family <- config_data$family[i]
       indices$formula <- config_data$formula[i]
       indices$min_depth <- config_data$min_depth[i]
@@ -237,7 +235,7 @@ process_species <- function(i) {
       write.csv(indices,
               paste0("output/",
                      stringr::str_replace_all(tolower(sub$common_name[1]),
-                        "^a-z0-9]+", "_"),
+                        "[^a-z0-9]+", "_"),
                      #"_",
                      #config_data$index_id[i],
                      "_index.csv"), row.names=FALSE)
@@ -245,7 +243,7 @@ process_species <- function(i) {
               paste0("output/biomass_weighted_depth/",
                     "biomass_weighted_depth_",
                     stringr::str_replace_all(tolower(sub$common_name[1]),
-                        "^a-z0-9]+", "_"),
+                        "[^a-z0-9]+", "_"),
                      #"_",
                      #config_data$index_id[i],
                      ".csv"), row.names=FALSE)
