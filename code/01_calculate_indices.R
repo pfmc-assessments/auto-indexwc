@@ -1,6 +1,6 @@
 library(nwfscSurvey)
 library(indexwc)
-library(lubridate)
+#library(lubridate)
 library(dplyr)
 library(sdmTMB)
 library(stringr)
@@ -13,7 +13,7 @@ num_batches <- 24
 args <- commandArgs(trailingOnly = TRUE)
 current_batch <- as.numeric(args[1]) # This gets the batch number
 
-# This replaces the csv code 
+# This replaces the csv code
 raw_url <- "https://raw.githubusercontent.com/pfmc-assessments/indexwc/main/data/configuration.rda"
 temp_file <- tempfile(fileext = ".rda")
 download.file(raw_url, temp_file, mode = "wb")
@@ -40,7 +40,7 @@ dat <- nwfscSurvey::pull_catch(survey = "NWFSC.Combo",
 names(dat) <- tolower(names(dat))
 dat <- dplyr::left_join(dat, haul[,c("trawl_id","area_swept_ha_der")])
 # convert date string to doy
-dat$yday <- lubridate::yday(dat$date)
+#dat$yday <- lubridate::yday(as.Date(dat$date))
 # filter out a few bad locations
 dat <- dplyr::filter(dat, !is.na(longitude_dd),
                 !is.na(latitude_dd))
@@ -64,7 +64,7 @@ config_data <- dplyr::filter(config_data, batch == current_batch)
 
 process_species <- function(i) {
   sub <- dplyr::filter(dat, common_name == config_data$species[i])
-  sub <- dplyr::mutate(sub, zday = (yday - mean(sub$yday)) / sd(sub$yday))
+  #sub <- dplyr::mutate(sub, zday = (yday - mean(sub$yday)) / sd(sub$yday))
   sub$pass_scaled <- sub$pass - mean(range(sub$pass)) # -0.5, 0.5
   # make sure depth is negative, like config file
   sub$depth_m <- -sub$depth_m
@@ -82,7 +82,7 @@ process_species <- function(i) {
   mesh <- sdmTMB::make_mesh(sub, xy_cols = c("X","Y"),
                             n_knots = config_data$knots[i])
   sub$fyear <- as.factor(sub$year) # year as factor
-
+  sub$catch_weight = sub$catch_weight * 0.001 # convert to mt, matching indexwc & SS
   sub$area_km2 <- sub$area_swept_ha_der * 0.01 # convert to km2
 
   # this is to help with printing, if done below
@@ -97,7 +97,7 @@ process_species <- function(i) {
   # initialize to NULL and wrap in try() to avoid
   # 'system is computationally singular' error
   fit <- NULL
-  fit <- try(sdmTMB(formula = as.formula(config_data$formula[i]),
+  fit <- suppressWarnings(try(sdmTMB(formula = as.formula(config_data$formula[i]),
                 time = "year",
                 offset = log(sub$area_km2),
                 mesh = mesh,
@@ -106,7 +106,8 @@ process_species <- function(i) {
                 spatiotemporal=st,
                 anisotropy = config_data$anisotropy[i],
                 family = get(config_data$family[i])(),
-                share_range = config_data$share_range[i]), silent = TRUE)
+                share_range = config_data$share_range[i]),
+             silent = TRUE))
 
   # create output directory if it doesn't exist
   if (!dir.exists("diagnostics")) {
@@ -114,7 +115,12 @@ process_species <- function(i) {
   }
   # Check write access
   file.access("diagnostics", mode = 2)
-  san <- sanity(fit, silent=TRUE)
+  if(inherits(fit, "try-error")) {
+    san <- list(all_ok = FALSE)
+    cat("Fitting failed for ", config_data$species[i], "\n")
+  } else {
+    san <- sanity(fit, silent = TRUE)
+  }
   write.csv(san, file=paste0("diagnostics/sanity_",
                              config_data$index[i], ".csv"), row.names=FALSE)
 
@@ -129,9 +135,9 @@ process_species <- function(i) {
                                    depth <= config_data$min_depth[i],
                                    depth > config_data$max_depth[i],
                                    area_km2_WCGBTS > 0)
-      print(nrow(wcgbts_grid))
+      #print(nrow(wcgbts_grid))
       # Add calendar date -- predicting to jul 1
-      wcgbts_grid$zday <- (182 - mean(sub$yday)) / sd(sub$yday)
+      #wcgbts_grid$zday <- (182 - mean(sub$yday)) / sd(sub$yday)
       wcgbts_grid$pass_scaled <- 0
       # add X-Y
       wcgbts_grid <- sdmTMB::add_utm_columns(wcgbts_grid,
@@ -144,7 +150,9 @@ process_species <- function(i) {
       wcgbts_grid$fyear <- as.factor(wcgbts_grid$year)
 
       # Make coastwide index
+      cat("Making predictions for ", config_data$species[i], "\n")
       pred_all <- predict(fit, wcgbts_grid, return_tmb_object = TRUE)
+      cat("Generating coastwide index for ", config_data$species[i], "\n")
       index_all <- get_index(pred_all,
                              area = wcgbts_grid$area_km2_WCGBTS,
                              bias_correct = TRUE)
@@ -171,6 +179,7 @@ process_species <- function(i) {
         )
       }
       # calculate biomass weighted depth
+      cat("Bootstrapping depth for ", config_data$species[i], "\n")
       mean_depth <- pred_all$data |>
         group_by(year) |>
         group_split() |>
@@ -192,6 +201,7 @@ process_species <- function(i) {
             upr = NA,
             log_est = NA,
             se = NA,
+            se_natural = NA,
             type = "index",
             index = region_name
           )
@@ -200,10 +210,13 @@ process_species <- function(i) {
         return(index)
       }
 
+      cat("Generating California index for ", config_data$species[i], "\n")
       index_CA <- process_region(region_code = "C",
                                  region_name = "California")
+      cat("Generating Oregon index for ", config_data$species[i], "\n")
       index_OR <- process_region(region_code = "O",
                                  region_name = "Oregon")
+      cat("Generating Washington index for ", config_data$species[i], "\n")
       index_WA <- process_region(region_code = "W",
                                  region_name = "Washington")
 
@@ -255,4 +268,3 @@ process_species <- function(i) {
 for(spp in 1:nrow(config_data)) {
   process_species(spp)
 }
-
