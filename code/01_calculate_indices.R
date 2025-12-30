@@ -249,17 +249,13 @@ process_species <- function(i) {
               paste0("output/",
                      stringr::str_replace_all(tolower(sub$common_name[1]),
                         "[^a-z0-9]+", "_"),
-                     #"_",
-                     #config_data$index_id[i],
-                     "_index.csv"), row.names=FALSE)
+                        "_index.csv"), row.names=FALSE)
       write.csv(mean_depth,
               paste0("output/",
                     "biomass_weighted_depth_",
                     stringr::str_replace_all(tolower(sub$common_name[1]),
                         "[^a-z0-9]+", "_"),
-                     #"_",
-                     #config_data$index_id[i],
-                     ".csv"), row.names=FALSE)
+                        ".csv"), row.names=FALSE)
   }
 }
 
