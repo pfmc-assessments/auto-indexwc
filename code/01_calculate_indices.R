@@ -20,7 +20,7 @@ download.file(raw_url, temp_file, mode = "wb")
 load(temp_file, envir = .GlobalEnv)
 config_data <- dplyr::filter(configuration, source == "NWFSC.Combo")
 sp_2025 <- c("canary rockfish", "chilipepper", "rougheye rockfish", "sablefish", "widow rockfish", "yelloweye rockfish", "yellowtail rockfish")
-config_data_2025 <- dplyr::filter(config_data, species %in% sp_2025 & used == "TRUE")
+config_data_2025 <- dplyr::filter(config_data, species %in% sp_2025 & used == TRUE)
 config_data_other <- dplyr::filter(config_data, !species %in% sp_2025)
 config_data <- rbind(config_data_2025, config_data_other) |>
   dplyr::arrange(tolower(species))
