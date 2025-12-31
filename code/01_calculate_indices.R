@@ -5,7 +5,6 @@ library(dplyr)
 library(sdmTMB)
 library(stringr)
 library(tibble)
-library(stringr)
 # library(future)
 # library(future.apply)
 
@@ -20,6 +19,11 @@ temp_file <- tempfile(fileext = ".rda")
 download.file(raw_url, temp_file, mode = "wb")
 load(temp_file, envir = .GlobalEnv)
 config_data <- dplyr::filter(configuration, source == "NWFSC.Combo")
+sp_2025 <- c("canary rockfish", "chilipepper", "rougheye rockfish", "sablefish", "widow rockfish", "yelloweye rockfish", "yellowtail rockfish")
+config_data_2025 <- dplyr::filter(config_data, species %in% sp_2025 & used == TRUE)
+config_data_other <- dplyr::filter(config_data, !species %in% sp_2025)
+config_data <- rbind(config_data_2025, config_data_other) |>
+  dplyr::arrange(tolower(species))
 unlink(temp_file)
 
 # add model index
@@ -219,6 +223,17 @@ process_species <- function(i) {
       indices <- rbind(index_all, index_CA, index_OR, index_WA)
       indices$index_id <- config_data$index[i]
       indices$common_name <- sub$common_name[1]
+      indices$family <- config_data$family[i]
+      indices$formula <- config_data$formula[i]
+      indices$min_depth <- config_data$min_depth[i]
+      indices$max_depth <- config_data$max_depth[i]
+      indices$min_latitude <- config_data$min_latitude[i]
+      indices$max_latitude <- config_data$max_latitude[i]
+      indices$anisotropy <- config_data$anisotropy[i]
+      indices$knots <- config_data$knots[i]
+      indices$spatiotemporal1 <- config_data$spatiotemporal1[i]
+      indices$spatiotemporal2 <- config_data$spatiotemporal2[i]
+      indices$share_range <- config_data$share_range[i]
 
       # append date as attribute
       attr(indices, "date") <- Sys.Date()
@@ -232,12 +247,15 @@ process_species <- function(i) {
 
       write.csv(indices,
               paste0("output/",
-                     sub$common_name[1],"_",
-                     config_data$index_id[i],".csv"), row.names=FALSE)
+                     stringr::str_replace_all(tolower(sub$common_name[1]),
+                        "[^a-z0-9]+", "_"),
+                        "_index.csv"), row.names=FALSE)
       write.csv(mean_depth,
-              paste0("output/biomass_weighted_depth_",
-                     sub$common_name[1],"_",
-                     config_data$index_id[i],".csv"), row.names=FALSE)
+              paste0("output/",
+                    "biomass_weighted_depth_",
+                    stringr::str_replace_all(tolower(sub$common_name[1]),
+                        "[^a-z0-9]+", "_"),
+                        ".csv"), row.names=FALSE)
   }
 }
 

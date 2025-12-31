@@ -40,10 +40,11 @@ jobs:
       - name: R packages
         run: |
           install.packages('remotes')
+          install.packages('pak')
           install.packages(c('dplyr', 'stringr', 'lubridate', 'tibble', 'future', 'future.apply'))
           install.packages(c('sf', 'terra', 'sdmTMB'), dependencies = TRUE)
-          remotes::install_github('pfmc-assessments/nwfscSurvey', dependencies = TRUE)
-          remotes::install_github('pfmc-assessments/indexwc', dependencies = TRUE)
+          pak::pak('pfmc-assessments/nwfscSurvey')
+          pak::pak('pfmc-assessments/indexwc')
         shell: Rscript {0}
       
       - name: run R script in batch mode ${{ matrix.batch }}
