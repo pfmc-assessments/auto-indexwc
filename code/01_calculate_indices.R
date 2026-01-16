@@ -126,7 +126,7 @@ process_species <- function(i) {
                                                       "[^a-z0-9]+", "_"),
                              ".csv"), row.names=FALSE)
 
-  if(class(fit) == "sdmTMB") {
+  if(class(fit) == "sdmTMB" & san$hessian_ok == TRUE) {
       # make predictions
       wcgbts_grid <- indexwc::california_current_grid
 
