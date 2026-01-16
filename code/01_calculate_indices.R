@@ -122,9 +122,11 @@ process_species <- function(i) {
     san <- sanity(fit, silent = TRUE)
   }
   write.csv(san, file=paste0("diagnostics/sanity_",
-                             config_data$index[i], ".csv"), row.names=FALSE)
+                             stringr::str_replace_all(tolower(sub$common_name[1]),
+                                                      "[^a-z0-9]+", "_"),
+                             ".csv"), row.names=FALSE)
 
-  if(class(fit) == "sdmTMB" & san$all_ok == TRUE) {
+  if(class(fit) == "sdmTMB") {
       # make predictions
       wcgbts_grid <- indexwc::california_current_grid
 
