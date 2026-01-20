@@ -84,7 +84,17 @@ process_species <- function(i) {
   sub$fyear <- as.factor(sub$year) # year as factor
   sub$catch_weight = sub$catch_weight * 0.001 # convert to mt, matching indexwc & SS
   sub$area_km2 <- sub$area_swept_ha_der * 0.01 # convert to km2
+  
+  # include depth_scaled for shortspine and chilipepper
+  sub$neg_depth <- -sub$depth_m
+  mean_neg_depth <- mean(sub$neg_depth)
+  sd_neg_depth <- sd(sub$neg_depth)
+  sub$depth_scaled <- - (sub$neg_depth - mean_neg_depth) / sd_neg_depth
+  sub$depth_scaled_squared <- sub$depth_scaled^2
 
+  # include split_mendocino for yellowtail
+  sub$split_mendocino <- ifelse(sub$latitude_dd > 40.1666667, "N", "S")
+  
   # this is to help with printing, if done below
   st <- if(config_data$family[i] == "tweedie") {
     config_data$spatiotemporal1[i]
@@ -137,6 +147,10 @@ process_species <- function(i) {
                                    depth <= config_data$min_depth[i],
                                    depth > config_data$max_depth[i],
                                    area_km2_WCGBTS > 0)
+      
+      wcgbts_grid$neg_depth <- - wcgbts_grid$depth
+      wcgbts_grid$depth_scaled <- - (wcgbts_grid$neg_depth - mean_neg_depth) / sd_neg_depth
+      wcgbts_grid$depth_scaled_squared <- wcgbts_grid$depth_scaled^2
       #print(nrow(wcgbts_grid))
       # Add calendar date -- predicting to jul 1
       #wcgbts_grid$zday <- (182 - mean(sub$yday)) / sd(sub$yday)
