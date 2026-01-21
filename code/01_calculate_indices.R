@@ -146,6 +146,7 @@ process_species <- function(i) {
                 anisotropy = config_data$anisotropy[i],
                 family = get(config_data$family[i])(),
                 share_range = config_data$share_range[i],
+                # the control argument is optional for most species and really only necessary for yellowtail
                 control = sdmTMB::sdmTMBcontrol(
                   map = list(b_j = map_pres,
                              b_j2 = map_pos),
