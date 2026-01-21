@@ -106,6 +106,35 @@ process_species <- function(i) {
   # fit the model using arguments in configuration file
   # initialize to NULL and wrap in try() to avoid
   # 'system is computationally singular' error
+  
+  # This is from the indexwc vignette, https://github.com/pfmc-assessments/indexwc/blob/main/vignettes/a3_multiple_area_indices.Rmd
+  # fit simple linear model to construct the coefficient mapping
+  lm <- lm(
+    formula = as.formula(config_data$formula[i]),
+    data = sub
+  )
+  coef_names <- names(coef(lm))
+  pres_not_identifiable <- names(which(is.na(coef(lm))))
+  lm_pos <- lm(
+    formula = as.formula(config_data$formula[i]),
+    data = dplyr::filter(sub, catch_weight > 0)
+  )
+  pos_not_identifiable <- names(which(is.na(coef(lm_pos))))
+  
+  # create mapping for covariates not identifiable
+  map_pres <- coef_names
+  map_pres[coef_names %in% pres_not_identifiable] <- NA
+  map_pres <- factor(map_pres)
+  map_pos <- coef_names
+  map_pos[coef_names %in% pos_not_identifiable] <- NA
+  map_pos <- factor(map_pos)
+  
+  # initial values for these
+  start_pres <- rep(0, length(coef_names))
+  start_pres[coef_names %in% pres_not_identifiable] <- -20
+  start_pos <- rep(0, length(coef_names))
+  start_pos[coef_names %in% pos_not_identifiable] <- -20
+  
   fit <- NULL
   fit <- suppressWarnings(try(sdmTMB(formula = as.formula(config_data$formula[i]),
                 time = "year",
@@ -116,7 +145,13 @@ process_species <- function(i) {
                 spatiotemporal=st,
                 anisotropy = config_data$anisotropy[i],
                 family = get(config_data$family[i])(),
-                share_range = config_data$share_range[i]),
+                share_range = config_data$share_range[i],
+                control = sdmTMB::sdmTMBcontrol(
+                  map = list(b_j = map_pres,
+                             b_j2 = map_pos),
+                  start = list(b_j = start_pres, b_j2 = start_pos),
+                  newton_loops = 1))
+                ,
              silent = TRUE))
 
   # create output directory if it doesn't exist
