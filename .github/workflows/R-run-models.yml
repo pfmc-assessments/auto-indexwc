@@ -43,6 +43,7 @@ jobs:
           install.packages('pak')
           install.packages(c('dplyr', 'stringr', 'lubridate', 'tibble', 'future', 'future.apply'))
           install.packages(c('sf', 'terra', 'sdmTMB'), dependencies = TRUE)
+          install.packages('Rdpack', type = "source") 
           pak::pak('pfmc-assessments/nwfscSurvey')
           pak::pak('pfmc-assessments/indexwc')
         shell: Rscript {0}
