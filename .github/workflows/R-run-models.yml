@@ -42,6 +42,7 @@ jobs:
       
       - name: R packages
         run: |
+          install.packages(c("svglite", "uuid", "Rdpack"), type = "source")
           install.packages('remotes')
           install.packages('pak')
           install.packages(c('dplyr', 'stringr', 'lubridate', 'tibble', 'future', 'future.apply'))
