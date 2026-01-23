@@ -24,6 +24,9 @@ jobs:
         with:
           use-public-rspm: true
       
+      - name: Set CRAN mirror
+        run: |
+          echo 'options(repos = c(CRAN = "https://cloud.r-project.org"))'      
       # Ubuntu-specific system dependencies
       #- name: Install system dependencies
       #  run: |
