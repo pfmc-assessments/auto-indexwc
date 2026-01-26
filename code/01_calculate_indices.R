@@ -135,6 +135,17 @@ process_species <- function(i) {
   start_pos <- rep(0, length(coef_names))
   start_pos[coef_names %in% pos_not_identifiable] <- -20
   
+  # Only modify control list if there are parameters that aren't identifiable
+  if(length(pres_not_identifiable) + length(pos_not_identifiable) == 0) {
+    sdmTMBcontrol <- sdmTMB::sdmTMBcontrol()
+  } else {
+    sdmTMBcontrol <- sdmTMB::sdmTMBcontrol(
+      map = list(b_j = map_pres,
+                 b_j2 = map_pos),
+      start = list(b_j = start_pres, b_j2 = start_pos),
+      newton_loops = 1)
+  }
+  
   fit <- NULL
   fit <- suppressWarnings(try(sdmTMB(formula = as.formula(config_data$formula[i]),
                 time = "year",
@@ -146,11 +157,7 @@ process_species <- function(i) {
                 anisotropy = config_data$anisotropy[i],
                 family = get(config_data$family[i])(),
                 share_range = config_data$share_range[i],
-                control = sdmTMB::sdmTMBcontrol(
-                  map = list(b_j = map_pres,
-                             b_j2 = map_pos),
-                  start = list(b_j = start_pres, b_j2 = start_pos),
-                  newton_loops = 1))
+                control = sdmTMBcontrol)
                 ,
              silent = TRUE))
 
