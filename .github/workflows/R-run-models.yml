@@ -9,7 +9,7 @@ on:
 
 jobs:
   run-models:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -25,17 +25,17 @@ jobs:
           use-public-rspm: true
       
       # Ubuntu-specific system dependencies
-      #- name: Install system dependencies
-      #  run: |
-      #    sudo apt-get update -qq
-      #    sudo apt-get install -y \
-      #      libcurl4-openssl-dev \
-      #      libssl-dev \
-      #      libxml2-dev \
-      #      libgdal-dev \
-      #      libgeos-dev \
-      #      libproj-dev \
-      #      libudunits2-dev
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libgdal-dev \
+            libgeos-dev \
+            libproj-dev \
+            libudunits2-dev
       
       - name: R packages
         run: |
