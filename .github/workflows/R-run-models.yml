@@ -38,7 +38,7 @@ jobs:
             "sdmTMB",
             "pfmc-assessments/nwfscSurvey",
             "pfmc-assessments/indexwc"
-          ), dependencies = TRUE)
+          ), type = "source", dependencies = TRUE)
         shell: Rscript {0}
 
       - name: Run SDMs with sdmTMB for Batch ${{ matrix.batch }}
