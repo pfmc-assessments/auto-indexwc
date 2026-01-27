@@ -39,11 +39,11 @@ jobs:
             "tibble",
             "sf",
             "sdmTMB"
-          ), dependencies = TRUE)
+          ), dependencies = TRUE, lib = Sys.getenv("R_LIBS_USER"))
           
           # Install GitHub packages
-          remotes::install_github("pfmc-assessments/nwfscSurvey", dependencies = TRUE)
-          remotes::install_github("pfmc-assessments/indexwc", dependencies = TRUE)
+          remotes::install_github("pfmc-assessments/nwfscSurvey", dependencies = TRUE, lib = Sys.getenv("R_LIBS_USER"))
+          remotes::install_github("pfmc-assessments/indexwc", dependencies = TRUE, lib = Sys.getenv("R_LIBS_USER"))
 
       - name: Run SDMs with sdmTMB for Batch ${{ matrix.batch }}
         run: Rscript code/01_calculate_indices.R ${{ matrix.batch }}
