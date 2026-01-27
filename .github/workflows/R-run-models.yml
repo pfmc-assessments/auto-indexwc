@@ -1,7 +1,7 @@
 name: Run SDMs
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   run-models:
@@ -20,11 +20,12 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
         with:
-          use-public-rspm: true  # Use binary packages when available
+          use-public-rspm: true  # Use CRAN binary packages when available
 
       - name: Install system dependencies (macOS)
         run: |
           brew install gdal geos proj udunits
+          xcode-select --install || true
 
       - name: Install R packages
         run: |
@@ -37,7 +38,7 @@ jobs:
             "sdmTMB",
             "pfmc-assessments/nwfscSurvey",
             "pfmc-assessments/indexwc"
-          ))
+          ), dependencies = TRUE)
         shell: Rscript {0}
 
       - name: Run SDMs with sdmTMB for Batch ${{ matrix.batch }}
