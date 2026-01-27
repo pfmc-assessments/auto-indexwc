@@ -322,4 +322,3 @@ process_species <- function(i) {
 for(spp in 1:nrow(config_data)) {
   process_species(spp)
 }
-
