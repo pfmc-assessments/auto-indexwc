@@ -24,22 +24,26 @@ jobs:
 
       - name: Install system dependencies (macOS)
         run: |
-          brew install gdal geos proj udunits
+          brew install gdal geos proj udunits pkg-config
           xcode-select --install || true
 
-      - name: Install R packages
+      - name: Install R packages using remotes
+        shell: Rscript {0}
         run: |
-          install.packages("pak")
-          pak::pak(c(
+          install.packages("remotes")  # install remotes first
+
+          # Install CRAN packages
+          remotes::install_cran(c(
             "dplyr",
             "stringr",
             "tibble",
             "sf",
-            "sdmTMB",
-            "pfmc-assessments/nwfscSurvey",
-            "pfmc-assessments/indexwc"
-          ), type = "source", dependencies = TRUE)
-        shell: Rscript {0}
+            "sdmTMB"
+          ), dependencies = TRUE)
+          
+          # Install GitHub packages
+          remotes::install_github("pfmc-assessments/nwfscSurvey", dependencies = TRUE)
+          remotes::install_github("pfmc-assessments/indexwc", dependencies = TRUE)
 
       - name: Run SDMs with sdmTMB for Batch ${{ matrix.batch }}
         run: Rscript code/01_calculate_indices.R ${{ matrix.batch }}
