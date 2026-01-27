@@ -1,57 +1,44 @@
-name: R-run-models1
-
-on:
-  schedule:
-    - cron: '0 0 2 1,4,7,10 *' # midnight UTC on the 2nd
-  push:
-    paths:
-      - 'code/01_calculate_indices.R'
-
 jobs:
   run-models:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
         batch: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: r-lib/actions/setup-r@v2
         with:
-          use-public-rspm: true
-      
-      # Ubuntu-specific system dependencies
-      - name: Install system dependencies
+          use-public-rspm: true  # Use binary packages when available
+
+      - name: Install system dependencies (macOS)
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            libcurl4-openssl-dev \
-            libssl-dev \
-            libxml2-dev \
-            libgdal-dev \
-            libgeos-dev \
-            libproj-dev \
-            libudunits2-dev
-      
-      - name: R packages
+          brew install gdal geos proj udunits
+
+      - name: Install R packages
         run: |
-          install.packages('remotes')
-          install.packages('pak')
-          install.packages(c('dplyr', 'stringr', 'lubridate', 'tibble', 'future', 'future.apply'))
-          install.packages(c('sf', 'terra', 'sdmTMB'), dependencies = TRUE)
-          install.packages('Rdpack', type = "source") 
-          pak::pak('pfmc-assessments/nwfscSurvey')
-          pak::pak('pfmc-assessments/indexwc')
+          install.packages("pak")
+          pak::pak(c(
+            "dplyr",
+            "stringr",
+            "tibble",
+            "sf",
+            "sdmTMB",
+            "pfmc-assessments/nwfscSurvey",
+            "pfmc-assessments/indexwc"
+          ))
         shell: Rscript {0}
-      
-      - name: run R script in batch mode ${{ matrix.batch }}
+
+      - name: Run SDMs with sdmTMB for Batch ${{ matrix.batch }}
         run: Rscript code/01_calculate_indices.R ${{ matrix.batch }}
-      
-      - name: upload results ${{ matrix.batch }}
+
+      - name: Upload results for Batch ${{ matrix.batch }}
         uses: actions/upload-artifact@v4
         with:
           name: batch-${{ matrix.batch }}
