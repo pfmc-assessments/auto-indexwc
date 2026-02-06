@@ -137,13 +137,13 @@ process_species <- function(i) {
   
   # Only modify control list if there are parameters that aren't identifiable
   if(length(pres_not_identifiable) + length(pos_not_identifiable) == 0) {
-    sdmTMBcontrol <- sdmTMB::sdmTMBcontrol()
+    sdmTMBcontrol <- sdmTMB::sdmTMBcontrol(newton_loops = 3)
   } else {
     sdmTMBcontrol <- sdmTMB::sdmTMBcontrol(
       map = list(b_j = map_pres,
                  b_j2 = map_pos),
       start = list(b_j = start_pres, b_j2 = start_pos),
-      newton_loops = 1)
+      newton_loops = 3)
   }
   
   fit <- NULL
