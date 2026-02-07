@@ -143,7 +143,7 @@ process_species <- function(i) {
       map = list(b_j = map_pres,
                  b_j2 = map_pos),
       start = list(b_j = start_pres, b_j2 = start_pos),
-      newton_loops = 2)
+      newton_loops = 3)
   }
   
   fit <- NULL
