@@ -1,6 +1,7 @@
 name: Commit results
 
 on:
+  workflow_dispatch:  # manual trigger
   schedule:
     - cron: '0 0 3 1,4,7,10 *'  # Runs midnight UTC on the 3rd of Jan, Apr, Jul, Oct
   push:
