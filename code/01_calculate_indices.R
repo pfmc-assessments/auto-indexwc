@@ -8,7 +8,7 @@ library(tibble)
 # library(future)
 # library(future.apply)
 
-num_batches <- 24
+num_batches <- 34
 # Read the batch number passed from GitHub Action
 args <- commandArgs(trailingOnly = TRUE)
 current_batch <- as.numeric(args[1]) # This gets the batch number
