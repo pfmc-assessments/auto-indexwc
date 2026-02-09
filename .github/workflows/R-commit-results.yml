@@ -57,7 +57,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               run_id: latestRun.id,
+              per_page: 100,
             });
+
+            console.log(`Found ${artifacts.data.artifacts.length} artifacts:`);
+            artifacts.data.artifacts.forEach(a => console.log(`  - ${a.name}`));
 
             if (!fs.existsSync('./artifacts')) fs.mkdirSync('./artifacts');
 
