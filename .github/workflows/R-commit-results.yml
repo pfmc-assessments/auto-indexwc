@@ -94,16 +94,19 @@ jobs:
 
           for batch_dir in artifacts/*; do
             echo "Processing $batch_dir"
+
             if [ -d "$batch_dir/output" ]; then
-              cp -v "$batch_dir/output"/*.csv output/ 2>/dev/null || echo "No CSVs found in $batch_dir/output"
+              echo "  Collecting output CSVs"
+              find "$batch_dir/output" -type f -name "*.csv" -exec cp -v {} output/ \;
             else
-              echo "No output directory in $batch_dir"
+              echo "  No output directory in $batch_dir"
             fi
 
             if [ -d "$batch_dir/diagnostics" ]; then
-              cp -v "$batch_dir/diagnostics"/*.csv diagnostics/ 2>/dev/null || echo "No CSVs found in $batch_dir/diagnostics"
+              echo "  Collecting diagnostics CSVs"
+              find "$batch_dir/diagnostics" -type f -name "*.csv" -exec cp -v {} diagnostics/ \;
             else
-              echo "No diagnostics directory in $batch_dir"
+              echo "  No diagnostics directory in $batch_dir"
             fi
           done
 
