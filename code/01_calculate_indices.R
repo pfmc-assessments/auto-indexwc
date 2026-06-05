@@ -62,6 +62,19 @@ config_data <- dplyr::filter(config_data, batch == current_batch)
 # Plan for parallelization (adjust number of workers as needed)
 #plan(multisession, workers = parallel::detectCores() - 1)
 
+# Helper: build a slug from species name
+species_slug <- function(name) {
+  stringr::str_replace_all(tolower(name), "[^a-z0-9]+", "_")
+}
+
+# Helper: build a model-level file stem, unique per config row
+# e.g. "NWFSC.Combo_delta_gamma_042"
+model_stem <- function(source, family, index_id) {
+  fam_slug <- stringr::str_replace_all(tolower(family), "[^a-z0-9]+", "_")
+  src_slug <- stringr::str_replace_all(tolower(source), "[^a-z0-9]+", "_")
+  sprintf("%s_%s_%03d", src_slug, fam_slug, index_id)
+}
+
 process_species <- function(i) {
   sub <- dplyr::filter(dat, common_name == config_data$species[i])
   #sub <- dplyr::mutate(sub, zday = (yday - mean(sub$yday)) / sd(sub$yday))
@@ -161,22 +174,22 @@ process_species <- function(i) {
                 ,
              silent = TRUE))
 
-  # create output directory if it doesn't exist
-  if (!dir.exists("diagnostics")) {
-    dir.create("diagnostics")
-  }
-  # Check write access
-  file.access("diagnostics", mode = 2)
+  # Build per-species subfolder paths
+  sp <- species_slug(config_data$species[i])
+  stem <- model_stem(config_data$source[i], config_data$family[i], config_data$index_id[i])
+
+  diag_dir <- file.path("diagnostics", sp)
+  if (!dir.exists(diag_dir)) dir.create(diag_dir, recursive = TRUE)
+
   if(inherits(fit, "try-error")) {
     san <- list(all_ok = FALSE)
     cat("Fitting failed for ", config_data$species[i], "\n")
   } else {
     san <- sanity(fit, silent = TRUE)
   }
-  write.csv(san, file=paste0("diagnostics/sanity_",
-                             stringr::str_replace_all(tolower(sub$common_name[1]),
-                                                      "[^a-z0-9]+", "_"),
-                             ".csv"), row.names=FALSE)
+  write.csv(san,
+            file = file.path(diag_dir, paste0("sanity_", stem, ".csv")),
+            row.names = FALSE)
 
   if(class(fit) == "sdmTMB" & san$hessian_ok == TRUE) {
       # make predictions
@@ -216,7 +229,7 @@ process_species <- function(i) {
                              bias_correct = TRUE)
       index_all$index <- "Coastwide"
 
-      # bootstrapping function for biomass wrighted depth
+      # bootstrapping function for biomass weighted depth
       bootstrap_year_sample <- function(df, n_boot = 200) {
         if(config_data$family[i] == "tweedie") {
           df$biomass <- exp(df$est)
@@ -296,24 +309,16 @@ process_species <- function(i) {
       # append date as attribute
       attr(indices, "date") <- Sys.Date()
 
-      # create output directory if it doesn't exist
-      if (!dir.exists("output")) {
-        dir.create("output")
-      }
-      # Check write access
-      file.access("output", mode = 2)
+      # create per-species output subfolder
+      out_dir <- file.path("output", sp)
+      if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 
       write.csv(indices,
-              paste0("output/",
-                     stringr::str_replace_all(tolower(sub$common_name[1]),
-                        "[^a-z0-9]+", "_"),
-                        "_index.csv"), row.names=FALSE)
+                file.path(out_dir, paste0(stem, "_index.csv")),
+                row.names = FALSE)
       write.csv(mean_depth,
-              paste0("output/",
-                    "biomass_weighted_depth_",
-                    stringr::str_replace_all(tolower(sub$common_name[1]),
-                        "[^a-z0-9]+", "_"),
-                        ".csv"), row.names=FALSE)
+                file.path(out_dir, paste0("biomass_weighted_depth_", stem, ".csv")),
+                row.names = FALSE)
   }
 }
 
