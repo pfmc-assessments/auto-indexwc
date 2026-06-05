@@ -55,3 +55,4 @@ jobs:
           path: |
             output/
             diagnostics/
+          retention-days: 90
