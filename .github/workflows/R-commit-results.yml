@@ -71,17 +71,25 @@ jobs:
               const extractDir = `./artifacts/${name}`;
 
               console.log(`Downloading ${name}`);
-              const download = await github.rest.actions.downloadArtifact({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                artifact_id: artifact.id,
-                archive_format: 'zip',
-              });
+              try {
+                const download = await github.rest.actions.downloadArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                  archive_format: 'zip',
+                });
 
-              fs.writeFileSync(destZip, Buffer.from(download.data));
-              fs.mkdirSync(extractDir);
-              execSync(`unzip -q ${destZip} -d ${extractDir}`);
-              console.log(`Extracted ${name} to ${extractDir}`);
+                fs.writeFileSync(destZip, Buffer.from(download.data));
+                fs.mkdirSync(extractDir);
+                execSync(`unzip -q ${destZip} -d ${extractDir}`);
+                console.log(`Extracted ${name} to ${extractDir}`);
+              } catch (err) {
+                if (err.status === 410) {
+                  console.warn(`Skipping ${name}: artifact has expired`);
+                } else {
+                  throw err;  // re-throw unexpected errors
+                }
+              }
             }
 
       - name: Show extracted artifact contents
@@ -101,8 +109,6 @@ jobs:
 
             if [ -d "$batch_dir/output" ]; then
               echo "  Collecting output CSVs (preserving species subfolders)"
-              # Use cp -r to preserve species/<file> subfolder structure.
-              # The trailing /. copies contents rather than the directory itself.
               cp -r "$batch_dir/output/." output/
             else
               echo "  No output directory in $batch_dir"
