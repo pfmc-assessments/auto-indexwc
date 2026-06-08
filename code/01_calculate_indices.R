@@ -100,21 +100,24 @@ process_species <- function(i) {
     }
   )
 
-  # Stop here if hessian not ok -- save diagnostics if available, skip index
+  # Stop here if hessian not ok -- manually save sanity CSV, skip index
   if (is.null(diag) || !isTRUE(diag$sanity$hessian_ok)) {
     cat("Hessian not ok or diagnostics failed for", config_data$species[i],
         "-- skipping index\n")
     if (!is.null(diag)) {
-      tryCatch(
-        save_index_outputs(
-          fit         = fit,
-          diagnostics = diag,
-          indices     = list(indices = data.frame(), plot_indices = NULL),
-          dir         = "output"
-        ),
-        error = function(e) cat("save_index_outputs() failed (no index):",
-                                conditionMessage(e), "\n")
-      )
+      tryCatch({
+        diag_dir <- file.path("output", fit$dir, "diagnostics")
+        dir.create(diag_dir, recursive = TRUE, showWarnings = FALSE)
+        write.csv(diag$sanity,
+                  file      = file.path(diag_dir, "sanity_data_frame.csv"),
+                  row.names = FALSE)
+        write.table(
+          rbind(c("AIC", diag$aic), c("NLL", -1 * diag$loglike)),
+          file      = file.path(diag_dir, "aic_nll.txt"),
+          row.names = FALSE, col.names = FALSE
+        )
+      }, error = function(e) cat("Manual diagnostics save failed:",
+                                 conditionMessage(e), "\n"))
     }
     return(invisible(NULL))
   }
