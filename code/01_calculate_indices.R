@@ -90,9 +90,33 @@ process_species <- function(i) {
   )
   if (is.null(fit)) return(invisible(NULL))
 
-  # -- 3. Diagnostics --------------------------------------------------------
+  # -- 3. Build prediction grid with effort = 1 (offset = 0) ---------------
+  # diagnose() and calc_index_areas() call predict() internally; the model was
+  # fit with offset = log(effort), so the prediction grid needs an effort
+  # column set to 1 (log(1) = 0) to avoid an offset length mismatch error.
+  pred_grid <- tryCatch({
+    g <- lookup_grid(
+      x             = fit$data[["survey_name"]][1],
+      max_latitude  = fit$ranges$latitude_max,
+      min_latitude  = fit$ranges$latitude_min,
+      max_longitude = fit$ranges$longitude_max,
+      min_longitude = fit$ranges$longitude_min,
+      max_depth     = abs(fit$ranges$depth_max),
+      years         = sort(unique(fit$data$year)),
+      data          = california_current_grid
+    )
+    g$effort <- 1
+    g
+  }, error = function(e) {
+    cat("lookup_grid() failed for", config_data$species[i], ":\n",
+        conditionMessage(e), "\n")
+    NULL
+  })
+  if (is.null(pred_grid)) return(invisible(NULL))
+
+  # -- 4. Diagnostics --------------------------------------------------------
   diag <- tryCatch(
-    diagnose(fit = fit),
+    diagnose(fit = fit, prediction_grid = pred_grid),
     error = function(e) {
       cat("diagnose() failed for", config_data$species[i], ":\n",
           conditionMessage(e), "\n")
@@ -122,12 +146,13 @@ process_species <- function(i) {
     return(invisible(NULL))
   }
 
-  # -- 4. Calculate indices --------------------------------------------------
+  # -- 5. Calculate indices --------------------------------------------------
   index <- tryCatch(
     calc_index_areas(
-      data       = fit$data,
-      fit        = fit,
-      boundaries = c("Coastwide", "CA", "OR", "WA")
+      data            = fit$data,
+      fit             = fit,
+      prediction_grid = pred_grid,
+      boundaries      = c("Coastwide", "CA", "OR", "WA")
     ),
     error = function(e) {
       cat("calc_index_areas() failed for", config_data$species[i], ":\n",
@@ -137,7 +162,7 @@ process_species <- function(i) {
   )
   if (is.null(index)) return(invisible(NULL))
 
-  # -- 5. Biomass-weighted depth (custom) ------------------------------------
+  # -- 6. Biomass-weighted depth (custom) ------------------------------------
   # Uses the full-grid prediction object stored in the Coastwide results
   pred_data <- tryCatch({
     pred_df    <- index$results[["Coastwide"]]$pred$data
@@ -153,7 +178,7 @@ process_species <- function(i) {
     NULL
   })
 
-  # -- 6. Save all outputs ---------------------------------------------------
+  # -- 7. Save all outputs ---------------------------------------------------
   tryCatch(
     save_index_outputs(
       fit         = fit,
