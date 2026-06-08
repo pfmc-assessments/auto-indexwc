@@ -125,10 +125,14 @@ process_species <- function(i) {
   )
 
   # Stop here if hessian not ok -- manually save sanity CSV, skip index
-  if (is.null(diag) || !isTRUE(diag$sanity$hessian_ok)) {
+  # diag$sanity is a data frame with columns: names, logical, text
+  # (returned by sanity_data() which wraps sdmTMB::sanity())
+  hessian_ok <- !is.null(diag) &&
+    isTRUE(diag$sanity$logical[diag$sanity$names == "hessian_ok"])
+  if (!hessian_ok) {
     cat("Hessian not ok or diagnostics failed for", config_data$species[i],
         "-- skipping index\n")
-    if (!is.null(diag)) {
+    if (!is.null(diag) && !is.null(fit$dir)) {
       tryCatch({
         diag_dir <- file.path("output", fit$dir, "diagnostics")
         dir.create(diag_dir, recursive = TRUE, showWarnings = FALSE)
