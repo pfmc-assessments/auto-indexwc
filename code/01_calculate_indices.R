@@ -5,6 +5,156 @@ library(sdmTMB)
 library(stringr)
 library(tibble)
 
+# Patch save_index_outputs() to fix fs::dir.create() bug in installed package
+# (should be fs::dir_create()). Overwrites the package version in this session.
+save_index_outputs <- function(
+  fit,
+  diagnostics,
+  indices,
+  dir = NULL,
+  overwrite = FALSE
+) {
+  nwfscSurvey::check_dir(dir = dir, verbose = TRUE)
+  if (!inherits(fit, "sdmTMB")) {
+    cli::cli_abort(c("x" = "{.arg fit} must be an sdmTMB object"))
+  }
+  if (!is.list(diagnostics)) {
+    cli::cli_abort(c("x" = "{.arg diagnostics} must be a list"))
+  }
+  if (!is.list(indices)) {
+    cli::cli_abort(c("x" = "{.arg indices} must be a list"))
+  }
+
+  dir_save <- if (is.null(dir)) fit$dir else fs::path(dir, fit$dir)
+  fs::dir_create(dir_save, recurse = TRUE)  # fixed: was fs::dir.create()
+  if (!file.exists(dir_save)) {
+    dir_save <- fs::path(getwd(), fit$dir)
+    fs::dir_create(dir_save, recurse = TRUE)
+  }
+  if (!file.exists(dir_save)) {
+    cli::cli_abort("A directory could not be created based upon the dir argument and fit$dir.")
+  }
+  cli::cli_alert_info("Output will be saved to {dir_save}:")
+
+  dir_data        <- fs::path(dir_save, "data")
+  dir_diagnostics <- fs::path(dir_save, "diagnostics")
+  dir_index       <- fs::path(dir_save, "index")
+  fs::dir_create(dir_data,        recurse = TRUE)
+  fs::dir_create(dir_diagnostics, recurse = TRUE)
+  fs::dir_create(dir_index,       recurse = TRUE)
+
+  # Check for existing files
+  if (!overwrite) {
+    existing_files <- c(fs::path(dir_data, "data.rdata"), fs::path(dir_data, "fit.rds"))
+    existing <- existing_files[fs::file_exists(existing_files)]
+    if (length(existing) > 0) {
+      cli::cli_abort(c(
+        "x" = "Files already exist in {.path {dir_save}}",
+        "i" = "Set {.code overwrite = TRUE} to replace existing files"
+      ))
+    }
+  }
+
+  # Save data and fit
+  data_to_save <- fit$data
+  save(data_to_save, file = fs::path(dir_data, "data.rdata"))
+  saveRDS(fit, file = fs::path(dir_data, "fit.rds"))
+
+  # Save sanity and AIC
+  cli::cli_inform(c("*" = "Running sanity check..."))
+  utils::write.table(diagnostics$sanity,
+    file = fs::path(dir_diagnostics, "sanity_data_frame.csv"),
+    append = FALSE, sep = ",", row.names = FALSE)
+  write.table(
+    rbind(c("AIC", diagnostics$aic), c("NLL", -1 * diagnostics$loglike)),
+    file = fs::path(dir_diagnostics, "aic_nll.txt"),
+    row.names = FALSE, col.names = FALSE)
+
+  # Save indices
+  cli::cli_inform(c("*" = "Saving and plotting indices..."))
+  write.csv(indices$indices,
+    file = fs::path(dir_index, "est_by_area.csv"), row.names = FALSE)
+
+  if (any(grepl("wide", indices$indices[["area"]], ignore.case = TRUE))) {
+    gg_cw <- indexwc::plot_indices(
+      data = dplyr::filter(indices$indices, grepl("wide", area, ignore.case = TRUE)),
+      save_loc = NULL, file_name = NULL)
+    suppressMessages(ggplot2::ggsave(
+      filename = fs::path(dir_index, "index_coastwide.png"),
+      plot = gg_cw, height = 7, width = 7))
+  }
+  if (!is.null(indices$plot_indices)) {
+    suppressMessages(ggplot2::ggsave(
+      filename = fs::path(dir_index, "index_all_areas.png"),
+      plot = indices$plot_indices, height = 7, width = 10))
+  }
+
+  # Save diagnostic plots and objects
+  cli::cli_inform(c("*" = "Plotting diagnostics..."))
+  if (!is.null(diagnostics$mesh_plot)) {
+    suppressMessages(ggplot2::ggsave(
+      filename = fs::path(dir_diagnostics, "mesh.png"),
+      plot = diagnostics$mesh_plot, height = 7, width = 7))
+  }
+  run_diagnostics <- list(
+    model = diagnostics$model, formula = diagnostics$formula,
+    loglike = diagnostics$loglike, aic = diagnostics$aic,
+    effects = diagnostics$effects)
+  save(run_diagnostics,
+    file = fs::path(dir_diagnostics, "run_diagnostics_and_estimates.rdata"))
+
+  if (!is.null(diagnostics$qq_plot)) {
+    suppressMessages(ggplot2::ggsave(
+      filename = fs::path(dir_diagnostics, "qq.png"),
+      plot = diagnostics$qq_plot, height = 7, width = 7))
+  }
+  if (!is.null(diagnostics$anisotropy_plot) &&
+      inherits(diagnostics$anisotropy_plot, "ggplot")) {
+    suppressMessages(ggplot2::ggsave(
+      filename = fs::path(dir_diagnostics, "anisotropy.png"),
+      plot = diagnostics$anisotropy_plot, height = 7, width = 7))
+  }
+  if (!is.null(diagnostics$fixed_effects_plot)) {
+    suppressMessages(ggplot2::ggsave(
+      filename = fs::path(dir_diagnostics, "fixed_effects.png"),
+      plot = diagnostics$fixed_effects_plot, height = 7, width = 7))
+  }
+  if (!is.null(diagnostics$residual_maps_by_year)) {
+    for (i in seq_along(diagnostics$residual_maps_by_year)) {
+      rp <- diagnostics$residual_maps_by_year[[i]]
+      if (!is.null(rp)) {
+        n_pages <- ggforce::n_pages(rp)
+        for (page in seq_len(n_pages)) {
+          suppressMessages(ggplot2::ggsave(
+            filename = fs::path(dir_diagnostics,
+                                sprintf("residuals_%d_page_%02d.png", i, page)),
+            plot = rp + ggforce::facet_wrap_paginate("year", nrow = 1, ncol = 2, page = page),
+            height = 5, width = 10))
+        }
+      }
+    }
+  }
+  if (!is.null(diagnostics$density_plots)) {
+    dp <- diagnostics$density_plots[[1]]
+    if (!is.null(dp)) {
+      n_pages <- ggforce::n_pages(dp)
+      for (page in seq_len(n_pages)) {
+        suppressMessages(ggplot2::ggsave(
+          filename = fs::path(dir_diagnostics,
+                              sprintf("density_page_%02d.png", page)),
+          plot = dp + ggforce::facet_wrap_paginate("year", nrow = 1, ncol = 2, page = page),
+          height = 5, width = 10))
+      }
+    }
+  }
+
+  data_with_residuals <- diagnostics$data_with_residuals
+  save(data_with_residuals,
+    file = fs::path(dir_diagnostics, "data_with_residuals.rdata"))
+  predictions <- diagnostics$predictions
+  save(predictions, file = fs::path(dir_diagnostics, "predictions.rdata"))
+}
+
 num_batches <- 34
 # Read the batch number passed from GitHub Action
 args <- commandArgs(trailingOnly = TRUE)
