@@ -306,7 +306,7 @@ process_species <- function(i) {
       data            = fit$data,
       fit             = fit,
       prediction_grid = pred_grid,
-      boundaries      = c("Coastwide", "CA", "OR", "WA")
+      boundaries      = c("Coastwide")#c("Coastwide", "CA", "OR", "WA")
     ),
     error = function(e) {
       cat("calc_index_areas() failed for", config_data$species[i], ":\n",
