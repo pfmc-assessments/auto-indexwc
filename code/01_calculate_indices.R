@@ -155,7 +155,7 @@ save_index_outputs <- function(
   save(predictions, file = fs::path(dir_diagnostics, "predictions.rdata"))
 }
 
-num_batches <- 34
+num_batches <- 100
 # Read the batch number passed from GitHub Action
 args <- commandArgs(trailingOnly = TRUE)
 current_batch <- as.numeric(args[1])
