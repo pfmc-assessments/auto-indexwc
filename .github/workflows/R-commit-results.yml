@@ -125,6 +125,11 @@ jobs:
           find output -type f | sort
 
           git add output
+          # Keep R model binaries out of the branch (they remain in the
+          # source artifacts). Git pathspec '*' matches across '/', so these
+          # patterns reach every nested output/.../*.rdata file.
+          git reset -q -- '*.rdata' '*.RData' '*.rds' '*.Rds'
+
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
