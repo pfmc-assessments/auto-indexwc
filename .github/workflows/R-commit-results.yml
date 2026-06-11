@@ -8,6 +8,10 @@ on:
     paths:
       - .github/workflows/R-commit-results.yml
 
+concurrency:
+  group: commit-results
+  cancel-in-progress: false
+
 jobs:
   commit-results:
     runs-on: macos-latest
