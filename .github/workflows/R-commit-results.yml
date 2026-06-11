@@ -104,32 +104,27 @@ jobs:
           git checkout --orphan autogen-results
           git rm -rf . || true
 
-          mkdir -p output diagnostics
+          mkdir -p output
 
-          for batch_dir in artifacts/*; do
+          for batch_dir in artifacts/*/; do
+            # Skip zip files
+            [[ "$batch_dir" == *.zip/ ]] && continue
             echo "Processing $batch_dir"
 
-            if [ -d "$batch_dir/output" ]; then
-              echo "  Collecting output CSVs (preserving species subfolders)"
-              cp -r "$batch_dir/output/." output/
+            # The artifact upload strips the "output/" prefix, so species
+            # subfolders sit directly under the batch dir. Copy everything
+            # across, skipping the zip sidecars.
+            if [ -d "$batch_dir" ]; then
+              cp -r "$batch_dir." output/
             else
-              echo "  No output directory in $batch_dir"
-            fi
-
-            if [ -d "$batch_dir/diagnostics" ]; then
-              echo "  Collecting diagnostics CSVs (preserving species subfolders)"
-              cp -r "$batch_dir/diagnostics/." diagnostics/
-            else
-              echo "  No diagnostics directory in $batch_dir"
+              echo "  No files found in $batch_dir"
             fi
           done
 
           echo "Final output structure:"
           find output -type f | sort
-          echo "Final diagnostics structure:"
-          find diagnostics -type f | sort
 
-          git add output diagnostics
+          git add output
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
