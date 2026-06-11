@@ -175,15 +175,15 @@ config_data <- rbind(config_data_2025, config_data_other) |>
 unlink(temp_file)
 
 # Add model index
-# Keep family strings intact (e.g. "sdmTMB::delta_gamma()") -- run_sdmtmb()
-# and pull_and_format_data() expect the full string and parse it internally.
-# Add a short version used only for the biomass-weighted depth bootstrap check.
-config_data$index_id    <- seq_len(nrow(config_data))
+config_data$index_id <- seq_len(nrow(config_data))
 config_data$family_short <- str_replace(config_data$family, "sdmTMB::", "") |>
   str_replace("\\(\\)", "")
 
-# Assign batch numbers in a round-robin fashion and filter to focal batch
-config_data$batch <- rep(1:num_batches, length.out = nrow(config_data))
+# One row per batch. num_batches follows the filtered row count, so
+# every row gets processed and batches beyond nrow ignored
+num_batches <- nrow(config_data)
+cat("Filtered config rows (= number of real batches):", num_batches, "\n")
+config_data$batch <- seq_len(nrow(config_data))
 config_data <- dplyr::filter(config_data, batch == current_batch)
 
 # Bootstrap biomass-weighted depth (custom, not in indexwc)
