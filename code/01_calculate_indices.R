@@ -257,7 +257,8 @@ process_species <- function(i) {
       n_knots        = my_data$knots,
       share_range    = my_data$share_range,
       anisotropy     = my_data$anisotropy,
-      spatiotemporal = list(my_data$spatiotemporal1, my_data$spatiotemporal2)
+      spatiotemporal = list(my_data$spatiotemporal1, my_data$spatiotemporal2),
+      sdmtmb_control = sdmTMB::sdmTMBcontrol(newton_loops = 1)
     ),
     error = function(e) {
       cat(
