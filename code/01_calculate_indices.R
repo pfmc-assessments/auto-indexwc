@@ -318,19 +318,19 @@ process_species <- function(i) {
 
   # -- 6. Biomass-weighted depth (custom) ------------------------------------
   # Uses the full-grid prediction object stored in the Coastwide results
-  pred_data <- tryCatch({
-    pred_df    <- index$results[["Coastwide"]]$pred$data
-    mean_depth <- pred_df |>
-      dplyr::group_by(year) |>
-      dplyr::group_split() |>
-      lapply(bootstrap_year_sample, family_name = config_data$family_short[i]) |>
-      dplyr::bind_rows()
-    mean_depth
-  }, error = function(e) {
-    cat("Biomass-weighted depth failed for", config_data$species[i], ":\n",
-        conditionMessage(e), "\n")
-    NULL
-  })
+  #pred_data <- tryCatch({
+  #  pred_df    <- index$results[["Coastwide"]]$pred$data
+  #  mean_depth <- pred_df |>
+  #    dplyr::group_by(year) |>
+  #    dplyr::group_split() |>
+  #    lapply(bootstrap_year_sample, family_name = config_data$family_short[i]) |>
+  #    dplyr::bind_rows()
+  #  mean_depth
+  #}, error = function(e) {
+  #  cat("Biomass-weighted depth failed for", config_data$species[i], ":\n",
+  #      conditionMessage(e), "\n")
+  #  NULL
+  #})
 
   # -- 7. Save all outputs ---------------------------------------------------
   tryCatch(
