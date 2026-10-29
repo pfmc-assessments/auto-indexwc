@@ -3,31 +3,36 @@ name: Run SDMs
 on:
   workflow_dispatch:  # Manual trigger
 
-jobs:
-  run-models:
-    runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        batch: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
+env:
+  GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+  R_KEEP_PKG_SOURCE: yes
+  # One cache entry per run: every new run installs fresh packages once, and
+  # "Re-run failed jobs" (same run_id) reuses them. Unused caches are evicted
+  # by GitHub after 7 days.
+  R_LIB_CACHE_KEY: rlib-${{ github.run_id }}
 
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
+jobs:
+  # ---------------------------------------------------------------------------
+  # Install R + packages once, then cache the package library for all batches
+  # ---------------------------------------------------------------------------
+  setup:
+    runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v7
-
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true  # Use CRAN binary packages when available
 
-      - name: Install system dependencies (macOS)
-        run: |
-          brew install gdal geos proj udunits pkg-config
-          xcode-select --install || true
+      # If this run already built the library (e.g. setup was re-run), reuse it
+      - name: Restore R library (if already built for this run)
+        id: restore
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ env.R_LIB_CACHE_KEY }}-${{ runner.os }}-${{ runner.arch }}
 
       - name: Install R packages
+        if: steps.restore.outputs.cache-hit != 'true'
         shell: Rscript {0}
         run: |
           install.packages("remotes")
@@ -50,8 +55,8 @@ jobs:
           ), dependencies = TRUE, lib = Sys.getenv("R_LIBS_USER"))
 
           # GitHub packages
-          remotes::install_github("sdmTMB/sdmTMB", 
-                                  dependencies = TRUE, 
+          remotes::install_github("sdmTMB/sdmTMB",
+                                  dependencies = TRUE,
                                   lib = Sys.getenv("R_LIBS_USER"))
           remotes::install_github("pfmc-assessments/nwfscSurvey",
                                   dependencies = TRUE,
@@ -59,6 +64,47 @@ jobs:
           remotes::install_github("pfmc-assessments/indexwc",
                                   dependencies = TRUE,
                                   lib = Sys.getenv("R_LIBS_USER"))
+
+      # Fail here (once) rather than in all 60 batches if something is broken
+      - name: Check that key packages load
+        shell: Rscript {0}
+        run: |
+          for (p in c("sf", "sdmTMB", "nwfscSurvey", "indexwc", "dplyr", "stringr", "tibble")) {
+            suppressPackageStartupMessages(library(p, character.only = TRUE))
+            cat(p, as.character(packageVersion(p)), "\n")
+          }
+
+      - name: Save R library to cache
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ env.R_LIB_CACHE_KEY }}-${{ runner.os }}-${{ runner.arch }}
+
+  # ---------------------------------------------------------------------------
+  # Run each batch using the cached library
+  # ---------------------------------------------------------------------------
+  run-models:
+    needs: setup
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Restore R library from setup job
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ env.R_LIB_CACHE_KEY }}-${{ runner.os }}-${{ runner.arch }}
+          fail-on-cache-miss: true
 
       - name: Run SDMs with sdmTMB for Batch ${{ matrix.batch }}
         run: Rscript code/01_calculate_indices.R ${{ matrix.batch }}
